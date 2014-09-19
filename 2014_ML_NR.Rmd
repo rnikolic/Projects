@@ -1,0 +1,210 @@
+---
+title:  "Predicting Activity Quality from Activity Monitors"
+author: "Radina Nikolic"
+date:   "Tuesday, September 16, 2014"
+output:  html_document
+---
+
+## 1. Introduction
+
+This project  was created as a simple solution to an Assignment given to Coursera students enrolled in Fall Term of Machine Learning class (September 2014). John Hopkins University professors teach the course.
+
+The ultimate goal of this exercise is to predict subject's activity quality based on the measurements collected from wearable activity monitoring devices. In essence we want to classify people into different categories, depending how well do they perform certain exercises, which are supposed to improve their overall health.
+
+Data for  this exercise are kindly provided by research team who is interested and involved with research in Human Action Recognition (HAR). It is a broad research area, with potential for a wide range of applications.
+
+More information about the HAR research and data is available at: http://groupware.les.inf.puc-rio.br/har. We would like to acknowledge and express an appreciation for publicly sharing data and results of their research.
+
+The Project is organized and executed in few phases, which will be briefly discussed and presented here. 
+
+## 2. Working Environment
+
+
+Working environment for this project will be R Language IDE. We started by setting Project working directory and loading the R packages that will be used for learning and prediction.. 
+
+```{r}
+#==============================================================
+# JHU Class: Machine Learning, Coursera 2014
+# Program:   Human Activity Recognition - Classification
+# Student:   Radina Nikolic
+# Date:      Sep 15, 2014
+#==============================================================
+
+#--------------------------------------------------------------
+# Step 0 - Setup the Working directory
+# 
+setwd("C:/_RADINA/Courses/2014_Machine_Learning_JH/Project")
+
+```
+
+As the course was rather focused on caret package, here we will apply its functionality. caret package can be regarded as a unified framework for applying other learning algorithms in R.
+
+```{r}
+#--------------------------------------------------------------
+# Step 1 - Load necessary packages
+#        
+
+library(caret)
+library(ggplot2)
+# library(Hmisc)   
+
+```
+
+
+## 3. Data Reading, Exploring and Feature Selection 
+
+For the purpose of this assignment, data was downloaded and saved on the local machine. The training data for this project are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available at: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+There is an option that files can be  accessed and read remotely.
+
+Based on the previous attempts and visual data exploration, one-third of available attributes was selected for further processing.
+
+
+```{r}
+#--------------------------------------------------------------
+# Step 2 - Read training and test data that are downlaoded locally
+#          It can be done remotly, too
+
+trainHar <- read.csv("pml-training.csv", header = TRUE, sep = ",")
+testHar  <- read.csv("pml-testing.csv",  header = TRUE, sep = ",")
+
+# Include only the following columns - Feature Selection
+# This decision is based on exploring data sets visually
+# Excluded: row numbers, timesatmpcolumns and NA columns (NZV)
+
+trainHar <- trainHar[,c(2, 8:11, 37:49, 60:68, 84:86, 102, 113:124, 151:160)]
+testHar  <- testHar[,c(2, 8:11, 37:49, 60:68, 84:86, 102, 113:124, 151:160)]
+
+dim(trainHar)
+dim(testHar)
+
+names(trainHar)
+#names(testHar
+```
+
+
+## 4. Model Building
+
+Training data were split into two subsets, in order to cross-validate model and estimated out of sample error, prior the fitted model is applied to test data.
+
+```{r}
+# Here we are splitting training data into two subsets (70:30)
+# We want to evaluate our model
+
+indexTrain  <- createDataPartition(trainHar$classe, p=0.70, list=FALSE)
+
+trainHar70 <- trainHar[indexTrain,]
+evalHar30  <- trainHar[-indexTrain,]
+
+dim(trainHar70)
+dim(evalHar30)
+
+```
+
+Among the various Machine learning algorithms available in R, RandomForest was selected for this task. This method resulted in decent accuracy, on both training and evaluation subsets.
+
+```{r}
+
+#--------------------------------------------------------------
+# Step 5 - Build Model - Random Forest
+
+set.seed(32323)
+
+rfModel <- train(classe ~ ., data = trainHar70, method = "rf")
+
+rfModel
+
+summary(rfModel)
+# Overall variable importance
+varImp(rfModel)
+
+```
+
+Here is an example how you can examine and look deeper into FinalModel, that above train method has selected as the one with the best accuracy and the least complexity (mtry = 29).
+
+
+```{r}
+# Look at Final Model 
+fm <- rfModel$finalModel
+
+# Show the Final Model class
+class(fm)
+
+# Show all the element of Final Model Object
+names (fm)
+
+```
+
+Now that we are happy with the model built, we will predict classes on evaluation subset and have a look at resulting Confusion Matrix.
+
+```{r}
+
+#--------------------------------------------------------------
+# Step 6 - Validation
+
+evaluations <- predict(rfModel, newdata=evalHar30)
+confusionMatrix(evaluations, evalHar30$classe)
+
+```
+
+Aside from the built-in resampling based on caret train function, the cross-validation on the remaining 30% observations was performed. Estimated out of sample error is rather low (With Accuracy = 0.993), so the fitted model can be applied to test data.
+
+## 5. Prediction 
+
+```{r}
+
+dim(testHar)
+
+finalPred <- predict(rfModel, newdata=testHar) 
+
+finalPred
+
+```
+
+## 6. Saving Results
+
+```{r}
+
+#--------------------------------------------------------------
+# Step 7 - Saving the Results
+
+
+# Ensure that you are in Project directory
+getwd()
+
+# This function was supplied by Course Staff
+# It requires that each estimated label is submitted as separate file
+pml_write_files = function(x)
+{
+     n = length(x)
+     for(i in 1:n)
+     {
+         filename = paste0("problem_id_",i,".txt")
+         write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+     }
+ }
+ 
+pml_write_files(finalPred)
+```
+
+Resulting files were submitted as the programming part of this Assignment solution. They are all marked correct.
+
+## 7. In Conclusion
+
+Although algorithm used and feature selected for this project yielded good prediction results on test data, we have to be very careful when reporting and interpreting this. In order to do that, better understanding of measurement data is necessary. 
+As part of future work, R code should be refactored into functions corresponding to different steps, and the whole work better parametrized.
+
+
+## 8. Literature
+
+1. Kuhn, M. Building Predictive Models in R Using the caret Package. Journal of Statistical Software, Volume 28, Issue 5, p. 1., 2008
+2. Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H.Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th Augmented Human (AH) International Conference in cooperation with ACM SIGCHI (Augmented Human'13). Stuttgart, Germany: ACM SIGCHI., 2013
+3. Human Activity REcognition Project at http://groupware.les.inf.puc-rio.br/har - Visited Sep 17, 2014
+4. caret Package on CRAN at http://cran.r-project.org/web/packages/caret/ - Visited Sep 17, 2014
+
