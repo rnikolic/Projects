@@ -1,0 +1,55 @@
+---
+title: "2015 Data Visualization"
+author: "Radina Nikolic"
+date: "Thursday, March 26, 2015"
+output: html_document
+---
+
+## 1. Introduction
+
+This document contains few Data Visualization Use Cases
+
+## 2. Plane Crashes 
+
+The first one was inspired by the latest plane crash in Europe. 
+
+Data were extracted from database of plane acccidents hosted at: 
+
+http://planecrashinfo.com.
+
+Fro data aquisition R code posted by Phill Jette was used
+
+https://github.com/philjette/CrashData/blob/master/PlaneCrashes.R
+
+So here we started with preprocessed data.
+
+```{r}
+
+library(ggplot2)
+
+setwd("C:/_RADINA/R/Planes")
+crashData = read.csv("data/CompiledCrashData.csv", header=TRUE)
+```
+
+
+### Plane Crashes Data Visualization
+
+```{r, echo=FALSE}
+
+ggplot(crashData, aes(crashYear)) +
+  geom_histogram(binwidth=1) +
+  #fte_theme() +
+  labs(x = "Year of Plane Crash", 
+       y = "Number of Accidents") +
+       scale_x_continuous(breaks=seq(1950,2015, by=5)) +
+       scale_y_continuous(breaks=seq(0,110, by=5)) +
+  ggtitle(expression(atop("Distribution of Plane Crashes (1950-2015)", 
+                     atop(italic("Based on data from planecrashinfo.com"), ""))))  
+```
+
+### Plane Crashes Data Summary Statistics
+
+```{r}
+summary(crashData)
+```
+
