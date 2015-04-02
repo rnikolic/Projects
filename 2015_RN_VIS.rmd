@@ -2,7 +2,8 @@
 title: "2015 Data Visualization"
 author: "Radina Nikolic"
 date: "Thursday, March 26, 2015"
-output: html_document
+output:html_document:  
+keep_md: true  
 ---
 
 ## 1. Introduction
